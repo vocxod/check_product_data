@@ -12,7 +12,14 @@ public class Car {
     private String color;
     private String type;
 
+    Car(){
+        super();
+        this.color = "Unknow";
+        this.type = "Unknow";
+    }
+    
     Car(String sColor, String sType){
+        super();
         this.color = sColor;
         this.type = sType;
     }
