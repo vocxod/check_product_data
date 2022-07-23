@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 /**
@@ -97,22 +98,7 @@ public class Jsonjack {
                                 badFiles.add(jsonProductFile.getAbsolutePath());
                             }
                         }
-                        /*
-                        for (FullAttribute item : productTwo.getFull_attributes()) {
-                            if (item.getName() == null) {
-                                // пустая строка
-                                fullAttributeErrors = fullAttributeErrors + 1;
-                            }
-                        }
-                        */
                     }
-                    /*
-                    System.out.println(ANSI_YELLOW +  productTwo + ANSI_RESET);
-                    File writeFileProduct = new File(ROOT_JSON_PATH +
-                            "java_json/10_107124.json.json");
-                    objectMapper.writeValue(writeFileProduct, productTwo);                    
-                    System.exit(0);
-                     */
                 }
             }
         } catch (IOException ex) {
@@ -125,5 +111,10 @@ public class Jsonjack {
         Set<String> uniqBadFiles = new HashSet<>(badFiles);
         System.out.println(ANSI_RED + "Bad files: " + uniqBadFiles.size() + " item(s)."
                 + ANSI_RESET);
+        FileWriter output = new FileWriter("bad_products_list.txt");
+        for(String sItem: uniqBadFiles){
+            output.write(sItem + '\n');
+        }
+        output.close();
     }
 }
