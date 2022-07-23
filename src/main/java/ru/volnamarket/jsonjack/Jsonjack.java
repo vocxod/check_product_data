@@ -5,7 +5,9 @@
 package ru.volnamarket.jsonjack;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+// import com.google.gson.Gson;
+import java.util.Set; // Import the Set class
+import java.util.HashSet; // Import the HashSet class
 import java.util.ArrayList;
 import java.io.File;
 import java.io.BufferedReader;
@@ -30,19 +32,17 @@ public class Jsonjack {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     private final static String ROOT_JSON_PATH = "/home/vragos/PyDev/DushEvo/json_data/lists/latest/";
-
-    public static void oldmain(String[] args) throws IOException {
-        // 
-    }
+ 
 
     public static void main(String[] args) throws IOException {
         int fullAttributeErrors = 0;
         int iFilesCompleted = 0;
+        ArrayList<String> badFiles = new ArrayList<>();
         System.out.println("Start app");
         try {
 
             ObjectMapper objectMapper = new ObjectMapper();
-            ArrayList<String> startDirs = new ArrayList<String>();
+            ArrayList<String> startDirs = new ArrayList<>();
             File jsonDir = new File(ROOT_JSON_PATH);
             if (jsonDir.isDirectory()) {
                 File arr[] = jsonDir.listFiles();
@@ -94,6 +94,7 @@ public class Jsonjack {
                         for(FullAttribute item: aFullAttributes){
                             if(!item.isValidData()){
                                 fullAttributeErrors = fullAttributeErrors + 1;
+                                badFiles.add(jsonProductFile.getAbsolutePath());
                             }
                         }
                         /*
@@ -121,5 +122,8 @@ public class Jsonjack {
         }
         System.out.println(ANSI_YELLOW + "Completed " + iFilesCompleted + " files");
         System.out.println(ANSI_GREEN + fullAttributeErrors + " errors founded" + ANSI_RESET);
+        Set<String> uniqBadFiles = new HashSet<>(badFiles);
+        System.out.println(ANSI_RED + "Bad files: " + uniqBadFiles.size() + " item(s)."
+                + ANSI_RESET);
     }
 }
