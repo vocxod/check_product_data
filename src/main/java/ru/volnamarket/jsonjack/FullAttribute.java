@@ -42,5 +42,13 @@ public class FullAttribute {
         return "FullATTR:{" + "name=" + name + ", value=" + value + ", is_link=" + is_link + '}';
     }
     
+    public boolean isValidData(){
+        Boolean bResult = false;
+        if( this.name != null && !this.name.trim().isEmpty()){
+            bResult = true;
+        }
+        return bResult;
+            
+    }
     
 }
