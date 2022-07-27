@@ -105,7 +105,7 @@ public class AddFilters {
                                     || item.getName().equals("Производитель"))) {
                                 // Это наш фильтр (в терминах опенкарта, или "срез" по нашему)
                                 // System.out.println(item);
-                                UpsertFilter(item);
+                                UpsertFilter(item, productTwo);
                             }
                         }
                     }
@@ -139,38 +139,7 @@ public class AddFilters {
         return product.getProduct_id();
     }
 
-    public static int UpsertFilterGroup(FullAttribute item) {
-        int iFgId = 0;
-        String sSql = "SELECT filter_group_id FROM oc_filter_group_descrption AS fgd WHERE fgd.name=?";
-        try ( Connection connection = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/volna",
-                "volna", "bBD65855ZLzl@@@###");) {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            connection.setAutoCommit(false); // disable auto commit
-            Statement statement;
-            statement = connection.createStatement();
-            ResultSet resultSet;
-
-            PreparedStatement pstmt = connection.prepareStatement(sSql);
-            pstmt.setString(1, item.getName());
-            resultSet = pstmt.executeQuery();
-            while (resultSet.next()) {
-                iFgId = resultSet.getInt("filter_group_id");
-                // prn("FGid:" + iFilterGroupId);
-
-                break;
-            }
-            if (iFgId == 0) {
-                // need add new filter group
-            }
-        } catch (Exception e) {
-            prn("SQL exception FiltegGroup");
-            prn(e.toString());
-        }
-        return iFgId;
-    }
-
-    public static int UpsertFilter(FullAttribute item) {
+    public static int UpsertFilter(FullAttribute item, Product product) {
         // Insert new filter (or select exist)
         // and return filter_id value
         int iFilterGroupId = 0;
@@ -249,7 +218,7 @@ public class AddFilters {
                     }
                     // end insert FILTER with FG_ID
                 } else {
-                    prn(ANSI_GREEN + "Branch 3" + ANSI_RESET);
+                    prn(ANSI_YELLOW + "Branch 3" + ANSI_RESET);
                     // BRANCH 3 
                     // CREATE GROUP+FILTER(by VALUE)
                     // need insert new filter_group and filter
@@ -299,7 +268,11 @@ public class AddFilters {
                     }
                 }
             } else {
-                prn(ANSI_GREEN + "Branch 1" + ANSI_RESET);
+                // prn(ANSI_GREEN + "Branch 1" + ANSI_RESET);
+                // in this place we doing link betwwen filter_id and product_id
+                // and we doing link between filter_id and category_id
+                upsertFilterToCategory(iFilterId, product);
+                // upsertFilterToProduct(iFilterId, product);
             }
 /*
             if (iFilterId == 0) {
@@ -326,6 +299,51 @@ public class AddFilters {
         }
          */
         return iFilterId;
+    }
+    
+    public static void upsertFilterToCategory(int iFilterId, Product product){
+        
+    }
+    
+    public static void upsertFilterToProduct(int iFilterId, Product product){
+        int iProductId = product.getProduct_id();
+        // String sSql = "SELECT product_id FROM oc_product_filter WHERE product_id=? AND filter_id=?";
+        String sSql = "SELECT product_id FROM oc_product_filter WHERE product_id="
+                + iProductId + " AND filter_id="
+                + iFilterId;
+        try ( Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/volna",
+                "volna", "bBD65855ZLzl@@@###");) {
+            ResultSet resultSet;           
+            /*
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            // connection.setAutoCommit(false); // disable auto commit
+            */
+            
+            /*
+            PreparedStatement pstmt = connection.prepareStatement(sSql);
+            pstmt.setInt(1, iProductId);
+            pstmt.setInt(2, iFilterId);
+            resultSet = pstmt.executeQuery();
+            `*/
+            
+            Statement statement;
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(sSql);
+            if(resultSet.next()){
+                // prn("Finded!");
+            } else {
+                String sSqlInsert = "INSERT INTO oc_product_filter (product_id, filter_id) "
+                        + "VALUES (?, ?)";
+                PreparedStatement pstmt = connection.prepareStatement(sSqlInsert);
+                pstmt = connection.prepareStatement(sSqlInsert);
+                pstmt.setInt(1, iProductId);
+                pstmt.setInt(2, iFilterId);
+                pstmt.executeUpdate();
+            }
+        } catch (Exception e){
+            prn(ANSI_RED + "ERROR:" + e.toString() + ANSI_RESET);
+        }
     }
 
 }

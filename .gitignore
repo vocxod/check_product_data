@@ -22,3 +22,5 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 bad_products_list.txt
+target/jsonjack-1.0-SNAPSHOT.jar
+./target/dependency/*
