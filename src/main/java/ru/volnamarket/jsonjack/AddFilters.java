@@ -104,16 +104,8 @@ public class AddFilters {
                             if (item.isIs_link() && item.isValidData() && !(item.getName().equals("Категория")
                                     || item.getName().equals("Производитель"))) {
                                 // Это наш фильтр (в терминах опенкарта, или "срез" по нашему)
-                                System.out.println(item);
+                                // System.out.println(item);
                                 UpsertFilter(item);
-                                // @todo
-                                /*
-                                int iFilterId = UpsertFilter(attributeItem);
-                                setFilterToProduct(Product productTwo, int iFilterId);
-                                int iCategoryId = getCategoryId(Product productTwo);
-                                setFilterToCategory(int iCategoryId, int iFilterId);
-                                 */
-                                System.exit(0);
                             }
                         }
                     }
@@ -147,6 +139,37 @@ public class AddFilters {
         return product.getProduct_id();
     }
 
+    public static int UpsertFilterGroup(FullAttribute item) {
+        int iFgId = 0;
+        String sSql = "SELECT filter_group_id FROM oc_filter_group_descrption AS fgd WHERE fgd.name=?";
+        try ( Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/volna",
+                "volna", "bBD65855ZLzl@@@###");) {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            connection.setAutoCommit(false); // disable auto commit
+            Statement statement;
+            statement = connection.createStatement();
+            ResultSet resultSet;
+
+            PreparedStatement pstmt = connection.prepareStatement(sSql);
+            pstmt.setString(1, item.getName());
+            resultSet = pstmt.executeQuery();
+            while (resultSet.next()) {
+                iFgId = resultSet.getInt("filter_group_id");
+                // prn("FGid:" + iFilterGroupId);
+
+                break;
+            }
+            if (iFgId == 0) {
+                // need add new filter group
+            }
+        } catch (Exception e) {
+            prn("SQL exception FiltegGroup");
+            prn(e.toString());
+        }
+        return iFgId;
+    }
+
     public static int UpsertFilter(FullAttribute item) {
         // Insert new filter (or select exist)
         // and return filter_id value
@@ -156,16 +179,16 @@ public class AddFilters {
                 + item.getValue().substring(1).toLowerCase();
         String sFilterGroupName = item.getName().substring(0, 1).toUpperCase()
                 + item.getName().substring(1).toLowerCase();
-        String sSqlSelect ="SELECT fg.filter_group_id, fgd.name, fd.name FROM oc_filter_group AS fg " +
-        " LEFT JOIN oc_filter_group_description AS fgd ON fg.filter_group_id=fgd.filter_group_id " +
-        " LEFT JOIN oc_filter AS f ON fg.filter_group_id=f.filter_group_id " +
-        " LEFT JOIN oc_filter_description AS fd ON f.filter_id=fd.filter_id  " +
-        " WHERE fgd.name =\"" + sFilterGroupName  + "\" AND fd.name=\"" + sFilterName  + "\"";
+        String sSqlSelect = "SELECT fg.filter_group_id, f.filter_id, fgd.name, fd.name FROM oc_filter_group AS fg "
+                + " LEFT JOIN oc_filter_group_description AS fgd ON fg.filter_group_id=fgd.filter_group_id "
+                + " LEFT JOIN oc_filter AS f ON fg.filter_group_id=f.filter_group_id "
+                + " LEFT JOIN oc_filter_description AS fd ON f.filter_id=fd.filter_id  "
+                + " WHERE fgd.name =\"" + sFilterGroupName + "\" AND fd.name=\"" + sFilterName + "\"";
         try ( Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/volna",
                 "volna", "bBD65855ZLzl@@@###");) {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            connection.setAutoCommit(false); // disable auto commit
+            // connection.setAutoCommit(false); // disable auto commit
             Statement statement;
             statement = connection.createStatement();
             ResultSet resultSet;
@@ -173,66 +196,122 @@ public class AddFilters {
 
             while (resultSet.next()) {
                 iFilterGroupId = resultSet.getInt("filter_group_id");
-                // prn("FGid:" + iFilterGroupId);
+                iFilterId = resultSet.getInt("filter_id");
+                // check ounce
+                if(iFilterGroupId>0 && iFilterId>0){
+                    // prn(ANSI_GREEN + " WELL: " + iFilterGroupId + ":" + iFilterId + ANSI_RESET);
+                    // System.exit(0);
+                }
                 break;
             }
+
+            // BRANCH 2or3 (else) or 1 (if >0)
+            // Try get filter_group_id if not exist on first stage
             if (iFilterGroupId == 0) {
-                // need insert new filter_group and filter
-                String sSqlInsertFilterGroup = "INSERT INTO oc_filter_group "
-                        + "(filter_group_id, sort_order) VALUES (null, \"100\");";
-                int iAffectedRows = statement.executeUpdate(sSqlInsertFilterGroup,
-                        Statement.RETURN_GENERATED_KEYS);
-                if (iAffectedRows != 0) {
-                    try ( ResultSet keys = statement.getGeneratedKeys()) {
-                        if (keys.next()) {
-                            iFilterGroupId = keys.getInt(1);
-                        }
-                        String sSqlInsertGroupDescription = "INSERT INTO " +
-                                "oc_filter_group_description (filter_group_id, language_id, name)" +
-                                " VALUES (" + iFilterGroupId + ", 1, " + "\"" + sFilterGroupName
-                                + "\"" + ")";
-                        prn(sSqlInsertGroupDescription);
-                        iAffectedRows = statement.executeUpdate(sSqlInsertGroupDescription,
-                                Statement.RETURN_GENERATED_KEYS);
-                        if(iAffectedRows != 0){
-                            String sSqlInsertFilter = "INSERT INTO oc_filter " +
-                                    "(filter_id, filter_group_id, sort_order)" +
-                                    " VALUES(null, " + iFilterGroupId + ", 100)";
-                            iAffectedRows = statement.executeUpdate(sSqlInsertFilter,
-                                    Statement.RETURN_GENERATED_KEYS);
-                            if(iAffectedRows != 0){
-                                try(ResultSet keys2 = statement.getGeneratedKeys()){
-                                    if(keys2.next()){
-                                        iFilterId = keys2.getInt(1);
-                                        prn("FILTER_ID=" + iFilterId);
-                                    }
-                                }
-                                String sInsertFilterDescription = "INSERT INTO " +
-                                        "oc_filter_description (filter_id, language_id, " +
-                                        "filter_group_id, name ) VALUES (?, ?, ?, ?)";
-                                PreparedStatement pstmt = connection.prepareStatement(sInsertFilterDescription);
-                                pstmt.setInt(1, iFilterId);
-                                pstmt.setInt(2, 1);
-                                pstmt.setInt(3, iFilterGroupId);
-                                pstmt.setString(4, sFilterName);
-                                iAffectedRows = pstmt.executeUpdate();
+                prn(ANSI_GREEN + "Branch 2 or 3" + ANSI_RESET);
+                String sSqlFGroup = "SELECT fgd.filter_group_id, fgd.name FROM "
+                        + "oc_filter_group AS fg LEFT JOIN oc_filter_group_description AS fgd "
+                        + "ON fg.filter_group_id=fgd.filter_group_id LEFT JOIN oc_filter AS f "
+                        + "ON fg.filter_group_id=f.filter_group_id LEFT JOIN oc_filter_description "
+                        + "AS fd ON f.filter_id=fd.filter_id "
+                        + "WHERE fgd.name = \"" + sFilterGroupName + "\"";
+                resultSet = statement.executeQuery(sSqlFGroup);
+                while (resultSet.next()) {
+                    iFilterGroupId = resultSet.getInt("filter_group_id");
+                    break;
+                }
+                if (iFilterGroupId > 0) {
+                    prn(ANSI_GREEN + "Branch 2" + ANSI_RESET);
+                    // BRANCH 2
+                    // в данной СУЩЕСТВУЮЩЕЙ группе  нет значения этого фильтра
+                    // need add filter with this filter+group_id
+                    String sSqlInsertFilter = "INSERT INTO oc_filter "
+                            + "(filter_id, filter_group_id, sort_order)"
+                            + " VALUES(null, " + iFilterGroupId + ", 100)";
+                    int iFgAffectedRows = statement.executeUpdate(sSqlInsertFilter,
+                            Statement.RETURN_GENERATED_KEYS);
+                    if (iFgAffectedRows != 0) {
+                        try ( ResultSet keys2 = statement.getGeneratedKeys()) {
+                            if (keys2.next()) {
+                                iFilterId = keys2.getInt(1);
+                                // prn("FILTER_ID=" + iFilterId);
                             }
                         }
+                        String sInsertFilterDescription = "INSERT INTO "
+                                + "oc_filter_description (filter_id, language_id, "
+                                + "filter_group_id, name ) VALUES (?, ?, ?, ?)";
+                        PreparedStatement pstmt = connection.prepareStatement(sInsertFilterDescription);
+                        pstmt.setInt(1, iFilterId);
+                        pstmt.setInt(2, 1);
+                        pstmt.setInt(3, iFilterGroupId);
+                        pstmt.setString(4, sFilterName);
+                        iFgAffectedRows = pstmt.executeUpdate();
                     }
+                    // end insert FILTER with FG_ID
                 } else {
-                    throw new Exception("Error add new filter in oc_filter_group");
+                    prn(ANSI_GREEN + "Branch 3" + ANSI_RESET);
+                    // BRANCH 3 
+                    // CREATE GROUP+FILTER(by VALUE)
+                    // need insert new filter_group and filter
+                    String sSqlInsertFilterGroup = "INSERT INTO oc_filter_group "
+                            + "(filter_group_id, sort_order) VALUES (null, \"100\");";
+                    int iAffectedRows = statement.executeUpdate(sSqlInsertFilterGroup,
+                            Statement.RETURN_GENERATED_KEYS);
+                    if (iAffectedRows != 0) {
+                        try ( ResultSet keys = statement.getGeneratedKeys()) {
+                            if (keys.next()) {
+                                iFilterGroupId = keys.getInt(1);
+                            }
+                            String sSqlInsertGroupDescription = "INSERT INTO "
+                                    + "oc_filter_group_description (filter_group_id, language_id, name)"
+                                    + " VALUES (" + iFilterGroupId + ", 1, " + "\"" + sFilterGroupName
+                                    + "\"" + ")";
+                            // prn(sSqlInsertGroupDescription);
+                            iAffectedRows = statement.executeUpdate(sSqlInsertGroupDescription,
+                                    Statement.RETURN_GENERATED_KEYS);
+                            if (iAffectedRows != 0) {
+                                String sSqlInsertFilter = "INSERT INTO oc_filter "
+                                        + "(filter_id, filter_group_id, sort_order)"
+                                        + " VALUES(null, " + iFilterGroupId + ", 100)";
+                                iAffectedRows = statement.executeUpdate(sSqlInsertFilter,
+                                        Statement.RETURN_GENERATED_KEYS);
+                                if (iAffectedRows != 0) {
+                                    try ( ResultSet keys2 = statement.getGeneratedKeys()) {
+                                        if (keys2.next()) {
+                                            iFilterId = keys2.getInt(1);
+                                            // prn("FILTER_ID=" + iFilterId);
+                                        }
+                                    }
+                                    String sInsertFilterDescription = "INSERT INTO "
+                                            + "oc_filter_description (filter_id, language_id, "
+                                            + "filter_group_id, name ) VALUES (?, ?, ?, ?)";
+                                    PreparedStatement pstmt = connection.prepareStatement(sInsertFilterDescription);
+                                    pstmt.setInt(1, iFilterId);
+                                    pstmt.setInt(2, 1);
+                                    pstmt.setInt(3, iFilterGroupId);
+                                    pstmt.setString(4, sFilterName);
+                                    iAffectedRows = pstmt.executeUpdate();
+                                }
+                            }
+                        }
+                    } else {
+                        throw new Exception("Error add new filter in oc_filter_group");
+                    }
                 }
-            }    
-            
+            } else {
+                prn(ANSI_GREEN + "Branch 1" + ANSI_RESET);
+            }
+/*
             if (iFilterId == 0) {
                 connection.rollback();
                 return iFilterId;
-            }            
+            }
             connection.commit();
+            */
         } catch (Exception e) {
             prn("Some JDBC error");
             prn(e.getMessage());
-        }  
+        }
         /*
         catch (SQLException e) {
             JDBCTutorialUtilities.printSQLException(e);
@@ -245,7 +324,7 @@ public class AddFilters {
               }
             }
         }
-        */
+         */
         return iFilterId;
     }
 
