@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+
 /**
  *
  * @author vragos
@@ -134,89 +135,81 @@ public class SetSizes {
          */
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String args[]) throws IOException {
         prn("Start");
         // createFilters("Start create filters...");
         setSizes("Set sizes to products");
     }
 
-    public static void setSizes(String sMessage){
+    public static void setSizes(String sMessage) {
         prn(sMessage);
-        String sSql = "SELECT pa.product_id, pa.text FROM oc_product_attribute AS pa "
-          + "WHERE pa.attribute_id IN (11)";
         try ( Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/volna",
                 "volna", "bBD65855ZLzl@@@###");) {
             Statement statement;
             statement = connection.createStatement();
             ResultSet resultSet;
-            resultSet = statement.executeQuery(sSql);
 
             int iProductId = 0;
             int iProductCount = 0;
             int iMatchesCount = 0;
             int iOneNumber = 0;
             int iTwoNumber = 0;
+            String sSql;
             String sProductAttribute;
-            // String regex = "(\\d{1,3})(\\.*)(\\d{0,3})";
-            // String regex = "(\\d{1,4})(\\.(\\d){1,2}|\\sсм|\\sмм)";
-            // String regex = "^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$";
-            // String regex = "([0-9]+)[\\.]?([0-9]+)?[xX]?([0-9]+)[\\.]?([0-9]+)?([\\s]?)(мм|см)?";
-            // String regex = "([0-9]+)|([0-9]+)\\.([0-9]+)|([0-9]+)[\\.]?([0-9]+)?[xX]?([0-9]+)?[\\.]?([0-9]+)?([\\s]*)?(мм|см)";
-            String regex = "([0-9]*[x][0-9]*)[\\s]?(мм|см)?";
-            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-
+            String[] regex = {"([0-9]+)([x|X|х|Х])([0-9]+)(.*)", "([0-9]+)(.*)"};
+            Pattern pattern;
             Matcher matcher;
             boolean matchResult;
-            //while(resultSet.next())
-            String[] sData = {"1", "2 см", "62", "55.4", "33 см", "123", "321 мм", "852 см",
-            "65 см", "68 см", "1 см", "64.34 см", "68", "1024 мм", "68", "66.5 см", "63",
-            "25.3", "90x100 см", "32х65 см", "80 x 65 см", "36х66 см", "50х50 см", "66х45 см"};
-            for(int i=0; i < sData.length; i++)
-            {
-              iProductCount += 1;
-              /*
-              iProductId = resultSet.getInt("product_id");
-              sProductAttribute = resultSet.getString("text");
-              */
-              iProductId = i;
-              sProductAttribute = sData[i];
+                sSql = "SELECT pa.product_id, pa.text FROM oc_product_attribute AS pa "
+                    + "WHERE pa.attribute_id IN (40) LIMIT 1000, 15";
+                resultSet = statement.executeQuery(sSql);
+            while (resultSet.next()) {
+                iProductCount += 1;
+                iProductId = resultSet.getInt("product_id");
+                sProductAttribute = resultSet.getString("text");
 
-              matcher = pattern.matcher(sProductAttribute);
-              matchResult = matcher.find();
-              if(matchResult){
-                iMatchesCount += 1;
-                System.out.print(sProductAttribute + " ");  
-                for (int g = 1; g <= matcher.groupCount(); g++) {
-                  if(matcher.group(g) != null){
-                    System.out.print("[" + g + "] {" + matcher.group(g) + "} " + matcher.matches());
-                  }
-                  /*
-                  if(matcher.group(g) != null){
-                    System.out.print(g + " " + matcher.group(g));
-                  }
-                  */
+                for (int ii = 0; ii < regex.length; ii++) {
+                    prn("Try REGEX: " + regex[ii]);
+                    pattern = Pattern.compile(regex[ii], Pattern.CASE_INSENSITIVE);
+                    System.out.println(ANSI_RED + regex[ii] + ANSI_RESET);
+                    matcher = pattern.matcher(sProductAttribute);
+//                     
+                    matcher = pattern.matcher(sProductAttribute);
+                    // case 1
+                    matchResult = matcher.matches();
+                    // case 2
+                    // matchResult = Pattern.compile(regex[ii]).matcher(sProductAttribute).matches();
+                    // case 3
+                    matchResult = Pattern.matches(regex[ii], sProductAttribute);
+                    if (matchResult) {
+                        iMatchesCount += 1;
+                        System.out.print(sProductAttribute + " ");
+                        for (int g = 1; g <= matcher.groupCount(); g++) {
+                            if (matcher.group(g) != null) {
+                                System.out.print("[" + g + "] {" + matcher.group(g) + "} " + matcher.matches());
+                            }
+                        }
+                        System.out.print("\n");
+
+                        // System.exit(0);
+                    } else {
+                        System.out.println(ANSI_BLUE + iProductId + " : " + ANSI_GREEN + sProductAttribute
+                                + " : " + ANSI_YELLOW + matcher.matches() + ANSI_RESET);
+                    }
+                    
                 }
-                System.out.print("\n");  
-
-                // System.exit(0);
-                
-              } else {
-                System.out.println(ANSI_BLUE + iProductId + " : " +  ANSI_GREEN + sProductAttribute
-                    + " : " + ANSI_YELLOW + matcher.matches() + ANSI_RESET);
-              }
             }
             prn("Products: " + iProductCount + " Matches: " + iMatchesCount);
-            prn("iOneNumber:" + iOneNumber + " iTwoNumber:" + iTwoNumber) ;
+            prn("iOneNumber:" + iOneNumber + " iTwoNumber:" + iTwoNumber);
 
             // Patterns
             // (\d{1,3})\s(см{0,2})
             // (\d{0,3})(\.{0,1})(x{0,1})(\d{0,3})(\s{0,1})(см{0,1})
             // (\d{1,3})(\.*)(\d{0,3}) 65 см
             // First stage - check ALL values to pattern
-
         } catch (Exception e) {
-          prn("SQL error: " + e.toString());
+            prn("SQL error: " + e.toString());
         }
     }
 
@@ -252,7 +245,7 @@ public class SetSizes {
                 iFilterGroupId = resultSet.getInt("filter_group_id");
                 iFilterId = resultSet.getInt("filter_id");
                 // check ounce
-                if(iFilterGroupId>0 && iFilterId>0){
+                if (iFilterGroupId > 0 && iFilterId > 0) {
                     // prn(ANSI_GREEN + " WELL: " + iFilterGroupId + ":" + iFilterId + ANSI_RESET);
                     // System.exit(0);
                 }
@@ -359,13 +352,13 @@ public class SetSizes {
                 upsertFilterToCategory(iFilterId, product);
                 // upsertFilterToProduct(iFilterId, product);
             }
-/*
+            /*
             if (iFilterId == 0) {
                 connection.rollback();
                 return iFilterId;
             }
             connection.commit();
-            */
+             */
         } catch (Exception e) {
             prn("Some JDBC error");
             prn(e.getMessage());
@@ -385,12 +378,12 @@ public class SetSizes {
          */
         return iFilterId;
     }
-    
-    public static void upsertFilterToCategory(int iFilterId, Product product){
-        
+
+    public static void upsertFilterToCategory(int iFilterId, Product product) {
+
     }
-    
-    public static void upsertFilterToProduct(int iFilterId, Product product){
+
+    public static void upsertFilterToProduct(int iFilterId, Product product) {
         int iProductId = product.getProduct_id();
         // String sSql = "SELECT product_id FROM oc_product_filter WHERE product_id=? AND filter_id=?";
         String sSql = "SELECT product_id FROM oc_product_filter WHERE product_id="
@@ -399,23 +392,22 @@ public class SetSizes {
         try ( Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/volna",
                 "volna", "bBD65855ZLzl@@@###");) {
-            ResultSet resultSet;           
+            ResultSet resultSet;
             /*
             Class.forName("com.mysql.cj.jdbc.Driver");
             // connection.setAutoCommit(false); // disable auto commit
-            */
-            
-            /*
+             */
+
+ /*
             PreparedStatement pstmt = connection.prepareStatement(sSql);
             pstmt.setInt(1, iProductId);
             pstmt.setInt(2, iFilterId);
             resultSet = pstmt.executeQuery();
             `*/
-            
             Statement statement;
             statement = connection.createStatement();
             resultSet = statement.executeQuery(sSql);
-            if(resultSet.next()){
+            if (resultSet.next()) {
                 // prn("Finded!");
             } else {
                 String sSqlInsert = "INSERT INTO oc_product_filter (product_id, filter_id) "
@@ -426,10 +418,9 @@ public class SetSizes {
                 pstmt.setInt(2, iFilterId);
                 pstmt.executeUpdate();
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             prn(ANSI_RED + "ERROR:" + e.toString() + ANSI_RESET);
         }
     }
 
 }
-
