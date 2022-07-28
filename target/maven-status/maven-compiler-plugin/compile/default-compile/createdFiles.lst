@@ -2,6 +2,7 @@ ru/volnamarket/jsonjack/Product.class
 ru/volnamarket/jsonjack/FullAttribute.class
 ru/volnamarket/jsonjack/Jsonjack.class
 ru/volnamarket/jsonjack/AddFilters.class
+ru/volnamarket/jsonjack/SetSizes.class
 ru/volnamarket/jsonjack/StartDBUse.class
 ru/volnamarket/jsonjack/Attribute.class
 ru/volnamarket/jsonjack/Car.class

@@ -6,6 +6,7 @@ package ru.volnamarket.jsonjack;
 
 import java.sql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Set; // Import the Set class
 import java.util.HashSet; // Import the HashSet class
 import java.util.ArrayList;
@@ -18,13 +19,12 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-
 /**
  *
  * @author vragos
  *
  */
-public class AddFilters {
+public class SetSizes {
 
     // for colored text
     public static final String ANSI_RESET = "\u001B[0m";
@@ -136,7 +136,88 @@ public class AddFilters {
 
     public static void main(String[] args) throws IOException {
         prn("Start");
-        createFilters("Start create filters...");
+        // createFilters("Start create filters...");
+        setSizes("Set sizes to products");
+    }
+
+    public static void setSizes(String sMessage){
+        prn(sMessage);
+        String sSql = "SELECT pa.product_id, pa.text FROM oc_product_attribute AS pa "
+          + "WHERE pa.attribute_id IN (11)";
+        try ( Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/volna",
+                "volna", "bBD65855ZLzl@@@###");) {
+            Statement statement;
+            statement = connection.createStatement();
+            ResultSet resultSet;
+            resultSet = statement.executeQuery(sSql);
+
+            int iProductId = 0;
+            int iProductCount = 0;
+            int iMatchesCount = 0;
+            int iOneNumber = 0;
+            int iTwoNumber = 0;
+            String sProductAttribute;
+            // String regex = "(\\d{1,3})(\\.*)(\\d{0,3})";
+            // String regex = "(\\d{1,4})(\\.(\\d){1,2}|\\sсм|\\sмм)";
+            // String regex = "^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$";
+            // String regex = "([0-9]+)[\\.]?([0-9]+)?[xX]?([0-9]+)[\\.]?([0-9]+)?([\\s]?)(мм|см)?";
+            // String regex = "([0-9]+)|([0-9]+)\\.([0-9]+)|([0-9]+)[\\.]?([0-9]+)?[xX]?([0-9]+)?[\\.]?([0-9]+)?([\\s]*)?(мм|см)";
+            String regex = "([0-9]*[x][0-9]*)[\\s]?(мм|см)?";
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+            Matcher matcher;
+            boolean matchResult;
+            //while(resultSet.next())
+            String[] sData = {"1", "2 см", "62", "55.4", "33 см", "123", "321 мм", "852 см",
+            "65 см", "68 см", "1 см", "64.34 см", "68", "1024 мм", "68", "66.5 см", "63",
+            "25.3", "90x100 см", "32х65 см", "80 x 65 см", "36х66 см", "50х50 см", "66х45 см"};
+            for(int i=0; i < sData.length; i++)
+            {
+              iProductCount += 1;
+              /*
+              iProductId = resultSet.getInt("product_id");
+              sProductAttribute = resultSet.getString("text");
+              */
+              iProductId = i;
+              sProductAttribute = sData[i];
+
+              matcher = pattern.matcher(sProductAttribute);
+              matchResult = matcher.find();
+              if(matchResult){
+                iMatchesCount += 1;
+                System.out.print(sProductAttribute + " ");  
+                for (int g = 1; g <= matcher.groupCount(); g++) {
+                  if(matcher.group(g) != null){
+                    System.out.print("[" + g + "] {" + matcher.group(g) + "} " + matcher.matches());
+                  }
+                  /*
+                  if(matcher.group(g) != null){
+                    System.out.print(g + " " + matcher.group(g));
+                  }
+                  */
+                }
+                System.out.print("\n");  
+
+                // System.exit(0);
+                
+              } else {
+                System.out.println(ANSI_BLUE + iProductId + " : " +  ANSI_GREEN + sProductAttribute
+                    + " : " + ANSI_YELLOW + matcher.matches() + ANSI_RESET);
+              }
+            }
+            prn("Products: " + iProductCount + " Matches: " + iMatchesCount);
+            prn("iOneNumber:" + iOneNumber + " iTwoNumber:" + iTwoNumber) ;
+
+            // Patterns
+            // (\d{1,3})\s(см{0,2})
+            // (\d{0,3})(\.{0,1})(x{0,1})(\d{0,3})(\s{0,1})(см{0,1})
+            // (\d{1,3})(\.*)(\d{0,3}) 65 см
+            // First stage - check ALL values to pattern
+
+        } catch (Exception e) {
+          prn("SQL error: " + e.toString());
+        }
     }
 
     public static int getProductId(Product product) {
@@ -351,3 +432,4 @@ public class AddFilters {
     }
 
 }
+

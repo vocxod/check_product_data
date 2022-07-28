@@ -24,3 +24,8 @@ hs_err_pid*
 bad_products_list.txt
 target/jsonjack-1.0-SNAPSHOT.jar
 ./target/dependency/*
+./idea
+/*.txt
+/idea
+/idea/
+.idea/
