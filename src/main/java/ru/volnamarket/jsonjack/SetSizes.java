@@ -153,28 +153,34 @@ public class SetSizes {
             int iProductId = 0;
             int iProductCount = 0;
             int iMatchesCount = 0;
-            int iOneNumber = 0;
-            int iTwoNumber = 0;
+            int iAttributeId = 0;
+            int[] aDimension = new int[2]; // for place parsed data
+
             String sSql;
             String sProductAttribute;
             String[] regex = {"([0-9]+)([x|X|х|Х])([0-9]+)(.*)", "([0-9]+)(.*)"};
             Pattern pattern;
             Matcher matcher;
+            int iProductSizes = 0; // count size data, exist in one attrribute
             boolean matchResult;
-                sSql = "SELECT pa.product_id, pa.text FROM oc_product_attribute AS pa "
-                    + "WHERE pa.attribute_id IN (40) LIMIT 1000, 15";
+                sSql = "SELECT pa.product_id, pa.text, pa.attribute_id FROM oc_product_attribute AS pa "
+                    + "WHERE pa.attribute_id IN (40) LIMIT 20";
                 resultSet = statement.executeQuery(sSql);
+
+            int badCount40 = 0;
             while (resultSet.next()) {
                 iProductCount += 1;
                 iProductId = resultSet.getInt("product_id");
                 sProductAttribute = resultSet.getString("text");
+                iAttributeId = resultSet.getInt("attribute_id");
+                //System.out.println(ANSI_GREEN + iProductId + ANSI_RESET);
 
                 for (int ii = 0; ii < regex.length; ii++) {
-                    prn("Try REGEX: " + regex[ii]);
+                    // prn("Try REGEX: " + regex[ii]);
                     pattern = Pattern.compile(regex[ii], Pattern.CASE_INSENSITIVE);
-                    System.out.println(ANSI_RED + regex[ii] + ANSI_RESET);
+                    // System.out.println(ANSI_RED + regex[ii] + ANSI_RESET);
                     matcher = pattern.matcher(sProductAttribute);
-//                     
+                     
                     matcher = pattern.matcher(sProductAttribute);
                     // case 1
                     matchResult = matcher.matches();
@@ -184,24 +190,46 @@ public class SetSizes {
                     matchResult = Pattern.matches(regex[ii], sProductAttribute);
                     if (matchResult) {
                         iMatchesCount += 1;
-                        System.out.print(sProductAttribute + " ");
-                        for (int g = 1; g <= matcher.groupCount(); g++) {
-                            if (matcher.group(g) != null) {
-                                System.out.print("[" + g + "] {" + matcher.group(g) + "} " + matcher.matches());
+                        iProductSizes = 0;
+                        // System.out.print(sProductAttribute + " ");
+                        if(iAttributeId == 40){
+                          if(matcher.groupCount() != 4){
+                            badCount40 += -1;
+                            System.out.println("PID:" + iProductId + ":G:" + matcher.group( matcher.groupCount() ));
+                            // Runtime.getRuntime().halt(-200);
+                          } else {
+                            for (int g = 1; g <= matcher.groupCount(); g++) {
+                                if (matcher.group(g) != null) {
+                                    iProductSizes += 1;
+                                    System.out.print("[" + ANSI_GREEN + g + ANSI_RESET + "]" 
+                                        + matcher.group(g));
+                                }
                             }
+                          }
+                        } else {
+                          for (int g = 1; g <= matcher.groupCount(); g++) {
+                              if (matcher.group(g) != null) {
+                                  iProductSizes += 1;
+                                  System.out.print("[" + ANSI_BLUE + g + ANSI_RESET + "]" 
+                                      + matcher.group(g));
+                              }
+                          }
+                        
                         }
-                        System.out.print("\n");
-
+                          
+                        // System.out.print("\n");
+                        break;
                         // System.exit(0);
                     } else {
+                      /*
                         System.out.println(ANSI_BLUE + iProductId + " : " + ANSI_GREEN + sProductAttribute
                                 + " : " + ANSI_YELLOW + matcher.matches() + ANSI_RESET);
+                                */
                     }
                     
                 }
             }
-            prn("Products: " + iProductCount + " Matches: " + iMatchesCount);
-            prn("iOneNumber:" + iOneNumber + " iTwoNumber:" + iTwoNumber);
+            prn("Products: " + iProductCount + " Matches: " + iMatchesCount + " BadCount40:" + badCount40);
 
             // Patterns
             // (\d{1,3})\s(см{0,2})

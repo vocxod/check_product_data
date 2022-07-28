@@ -9,9 +9,12 @@ class SizeType
   int width;
   int length;
   int depth; // it can be alternative for specifying width or for length
-  // int[] sizeData; // 
+  int[] sizeData = new int[3]; // 
 
-  SizeType(int attributeId){
+  SizeType(int attributeId, int[] aData){
+    if(aData.length == 1){
+      // one size
+    }
     this.attributeId = attributeId;
     try{
       switch(attributeId){
