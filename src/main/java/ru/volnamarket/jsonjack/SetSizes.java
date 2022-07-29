@@ -164,10 +164,16 @@ public class SetSizes {
             int iProductSizes = 0; // count size data, exist in one attrribute
             boolean matchResult;
                 sSql = "SELECT pa.product_id, pa.text, pa.attribute_id FROM oc_product_attribute AS pa "
-                    + "WHERE pa.attribute_id IN (11, 12, 40, 125, 217) LIMIT 20";
-                resultSet = statement.executeQuery(sSql);
+//                    + "WHERE pa.attribute_id IN (11, 12, 40, 125, 217) LIMIT 20";
+                      + "WHERE pa.attribute_id IN (40) LIMIT 10";
+               resultSet = statement.executeQuery(sSql);
 
             int badCount40 = 0;
+            int iSizeX = 0;
+            int iSizeY = 0;
+            int iSizeZ = 0;
+            ArrayList<String> aSqlCommandSet = new ArrayList<String>();
+            ArrayList<String> aSmallSet = new ArrayList<String>();
             while (resultSet.next()) {
                 iProductCount += 1;
                 iProductId = resultSet.getInt("product_id");
@@ -201,23 +207,51 @@ public class SetSizes {
                             for (int g = 1; g <= matcher.groupCount(); g++) {
                                 if (matcher.group(g) != null) {
                                     iProductSizes += 1;
+                                    /*
                                     System.out.print("[" + ANSI_GREEN + g + ANSI_RESET + "]" 
                                         + matcher.group(g));
+                                        */
                                 }
+                            }
+                            iSizeX = (int)Double.parseDouble(matcher.group(1));
+                            iSizeY = (int)Double.parseDouble(matcher.group(3));
+                            // System.out.print(" [" + iSizeX + " : " + iSizeY + "]");
+                            // set size data in Product
+                            aSmallSet = upsertProduct(iProductId, iAttributeId, iSizeX, iSizeY);
+                            for(String sCommand: aSmallSet){
+                              aSqlCommandSet.add(sCommand);
+                            }
+                            // upsert in oc_product_attribute data to length(217) and width(12)
+                            aSmallSet = upsertProductAttribute(iProductId, iAttributeId, iSizeX, iSizeY);
+                            for(String sCommand: aSmallSet){
+                              aSqlCommandSet.add(sCommand);
                             }
                           }
                         } else {
                           for (int g = 1; g <= matcher.groupCount(); g++) {
                               if (matcher.group(g) != null) {
                                   iProductSizes += 1;
+                                  /*
                                   System.out.print("[" + ANSI_BLUE + g + ANSI_RESET + "]" 
                                       + matcher.group(g));
+                                      */
                               }
                           }
-                        
+                          iSizeX = (int)Double.parseDouble(matcher.group(1));
+                          // System.out.print(" {" + iSizeX + "}");
+                          aSmallSet = upsertProduct(iProductId, iAttributeId, iSizeX);
+                          for(String sCommand: aSmallSet){
+                            aSqlCommandSet.add(sCommand);
+                          }
+                          // upsert in oc_product_attribute data to length(217) and width(12)
+                          sSqlCommandSet = upsertProductAttribute(iProductId, iAttributeId, iSizeX);
+                          for(String sCommand: aSmallSet){
+                            aSqlCommandSet.add(sCommand);
+                          }
                         }
                           
                         // System.out.print("\n");
+
                         break;
                         // System.exit(0);
                     } else {
@@ -229,6 +263,9 @@ public class SetSizes {
                     
                 }
             }
+            for(String item: aSqlCommandSet){
+              System.out.println(item);
+            }
             prn("Products: " + iProductCount + " Matches: " + iMatchesCount + " BadCount40:" + badCount40);
 
             // Patterns
@@ -239,6 +276,62 @@ public class SetSizes {
         } catch (Exception e) {
             prn("SQL error: " + e.toString());
         }
+    }
+
+    // System.out.print(" {" + iSizeX + "}");
+    public static ArrayList<String> upsertProduct(int iProductId, int iAttributeId, int iSizeX){
+      ArrayList aSmallSet = new ArrayList<String>();
+      return aSmallSet;
+    }
+    // upsert in oc_product_attribute data to length(217) and width(12)
+    public static ArrayList<String> upsertProductAttribute(int iProductId, int iAttributeId, int iSizeX){
+      ArrayList aSmallSet = new ArrayList<String>();
+      return aSmallSet;
+    }
+
+
+    // System.out.print(" {" + iSizeX + "}");
+    public static String upsertProduct(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
+      int iLength = 0;
+      int iWidth = 0;
+      ArrayList aSmallSet = new ArrayList<String>();
+      if(iSizeX >= iSizeY){
+        iLength = iSizeX;
+        iWidth = iSizeY;
+      } else {
+        iLength = iSizeY;
+        iWidth = iSizeX;
+      }
+      if(iAttributeId == 40){
+        aSmallSet.add("UPDATE oc_product SET length=" + iSizeX + ", width=" + iSizeY
+           + " WHERE product_id=" + iProductId);
+      }
+      return aSmallSet;
+    }
+    // upsert in oc_product_attribute data to length(217) and width(12)
+    public static String[] upsertProductAttribute(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
+      int iLength = 0;
+      int iWidth = 0;
+      ArrayList<String> aSmallSet = new ArrayList<String>;
+      if(iSizeX >= iSizeY){
+        iLength = iSizeX;
+        iWidth = iSizeY;
+      } else {
+        iLength = iSizeY;
+        iWidth = iSizeX;
+      }
+      if(iAttributeId == 40){
+        // delete first
+        aSmallSet.add("DELETE FROM oc_product_attribute WHERE product_id=" + iProductId
+            + " AND attribute_id=" + iAttributeId);
+        // insert after
+        aSmallSet.add("INSERT INTO oc_product_attribute SET product_id=" + iProductId
+            + ", attribute_id=" + "217" + ", text=" + iSizeX);
+        aSmallSet.add("INSERT INTO oc_product_attribute SET product_id=" + iProductId
+            + ", attribute_id=" + "12" + ", text=" + iSizeY);
+      }
+      return sSql;
+
     }
 
     public static int getProductId(Product product) {
