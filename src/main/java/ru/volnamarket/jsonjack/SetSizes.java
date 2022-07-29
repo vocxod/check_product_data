@@ -164,7 +164,7 @@ public class SetSizes {
             int iProductSizes = 0; // count size data, exist in one attrribute
             boolean matchResult;
                 sSql = "SELECT pa.product_id, pa.text, pa.attribute_id FROM oc_product_attribute AS pa "
-                    + "WHERE pa.attribute_id IN (40) LIMIT 20";
+                    + "WHERE pa.attribute_id IN (11, 12, 40, 125, 217) LIMIT 20";
                 resultSet = statement.executeQuery(sSql);
 
             int badCount40 = 0;
