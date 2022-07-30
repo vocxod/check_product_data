@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package ru.volnamarket.jsonjack;
 
 import java.sql.*;
@@ -13,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Date;
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -164,8 +161,8 @@ public class SetSizes {
             int iProductSizes = 0; // count size data, exist in one attrribute
             boolean matchResult;
                 sSql = "SELECT pa.product_id, pa.text, pa.attribute_id FROM oc_product_attribute AS pa "
-//                    + "WHERE pa.attribute_id IN (11, 12, 40, 125, 217) LIMIT 20";
-                      + "WHERE pa.attribute_id IN (40) LIMIT 10";
+                    + "WHERE pa.attribute_id IN (11, 12, 40, 125, 217)";
+//                      + "WHERE pa.attribute_id IN (40) LIMIT 10";
                resultSet = statement.executeQuery(sSql);
 
             int badCount40 = 0;
@@ -202,7 +199,6 @@ public class SetSizes {
                           if(matcher.groupCount() != 4){
                             badCount40 += -1;
                             System.out.println("PID:" + iProductId + ":G:" + matcher.group( matcher.groupCount() ));
-                            // Runtime.getRuntime().halt(-200);
                           } else {
                             for (int g = 1; g <= matcher.groupCount(); g++) {
                                 if (matcher.group(g) != null) {
@@ -244,10 +240,12 @@ public class SetSizes {
                             aSqlCommandSet.add(sCommand);
                           }
                           // upsert in oc_product_attribute data to length(217) and width(12)
-                          sSqlCommandSet = upsertProductAttribute(iProductId, iAttributeId, iSizeX);
+                          // aSmallSet = upsertProductAttribute(iProductId, iAttributeId, iSizeX);
+                          /*
                           for(String sCommand: aSmallSet){
                             aSqlCommandSet.add(sCommand);
                           }
+                          */
                         }
                           
                         // System.out.print("\n");
@@ -263,9 +261,7 @@ public class SetSizes {
                     
                 }
             }
-            for(String item: aSqlCommandSet){
-              System.out.println(item);
-            }
+            sqlExecutor(aSqlCommandSet);
             prn("Products: " + iProductCount + " Matches: " + iMatchesCount + " BadCount40:" + badCount40);
 
             // Patterns
@@ -280,18 +276,63 @@ public class SetSizes {
 
     // System.out.print(" {" + iSizeX + "}");
     public static ArrayList<String> upsertProduct(int iProductId, int iAttributeId, int iSizeX){
+      int iLength = 0;
+      int iWidth = 0;
       ArrayList aSmallSet = new ArrayList<String>();
+
+      java.util.Date dt = new java.util.Date();
+      java.text.SimpleDateFormat sdf = 
+      new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      String sDateModified = sdf.format(dt);
+
+      if(iAttributeId == 11){
+        aSmallSet.add("UPDATE oc_product SET date_modified=\"" + sDateModified + "\", height=" + iSizeX
+            + " WHERE product_id=" + iProductId);
+      }
+      if(iAttributeId == 12){
+        aSmallSet.add("UPDATE oc_product SET date_modified=\"" + sDateModified + "\",  width=" + iSizeX
+            + " WHERE product_id=" + iProductId);
+      }
+      if(iAttributeId == 125){
+        aSmallSet.add("UPDATE oc_product SET date_modified=\"" + sDateModified + "\",  length=" + iSizeX 
+            + " WHERE product_id=" + iProductId);
+      }
+      if(iAttributeId == 217){
+        aSmallSet.add("UPDATE oc_product SET date_modified=\"" + sDateModified + "\", length=" + iSizeX 
+            + " WHERE product_id=" + iProductId);
+      }
       return aSmallSet;
     }
+
+
     // upsert in oc_product_attribute data to length(217) and width(12)
+    // @deprecated not need to invoke!
     public static ArrayList<String> upsertProductAttribute(int iProductId, int iAttributeId, int iSizeX){
-      ArrayList aSmallSet = new ArrayList<String>();
+      int iLength = 0;
+      int iWidth = 0;
+      ArrayList<String> aSmallSet = new ArrayList<String>();
       return aSmallSet;
+      /*
+      if(iSizeX >= iSizeY){
+        iLength = iSizeX;
+        iWidth = iSizeY;
+      } else {
+        iLength = iSizeY;
+        iWidth = iSizeX;
+      }
+      // delete first
+      aSmallSet.add("DELETE FROM oc_product_attribute WHERE product_id=" + iProductId
+          + " AND attribute_id IN (" + iAttributeId + ") ");
+      // insert after
+      aSmallSet.add("INSERT INTO oc_product_attribute SET product_id=" + iProductId
+          + ", attribute_id=" + iAttributeId + ", text=" + iSizeX + ", language_id=1");
+      return aSmallSet;
+      */
     }
 
 
     // System.out.print(" {" + iSizeX + "}");
-    public static String upsertProduct(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
+    public static ArrayList<String> upsertProduct(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
       int iLength = 0;
       int iWidth = 0;
       ArrayList aSmallSet = new ArrayList<String>();
@@ -302,17 +343,24 @@ public class SetSizes {
         iLength = iSizeY;
         iWidth = iSizeX;
       }
+
+      java.util.Date dt = new java.util.Date();
+      java.text.SimpleDateFormat sdf = 
+      new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      String sDateModified = sdf.format(dt);
+      
       if(iAttributeId == 40){
-        aSmallSet.add("UPDATE oc_product SET length=" + iSizeX + ", width=" + iSizeY
-           + " WHERE product_id=" + iProductId);
+        aSmallSet.add("UPDATE oc_product SET date_modified=\"" + sDateModified + "\", length=" + iSizeX 
+            + ", width=" + iSizeY + " WHERE product_id=" + iProductId);
       }
       return aSmallSet;
     }
     // upsert in oc_product_attribute data to length(217) and width(12)
-    public static String[] upsertProductAttribute(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
+    public static ArrayList<String> upsertProductAttribute(int iProductId, int iAttributeId, int iSizeX, int iSizeY){
       int iLength = 0;
       int iWidth = 0;
-      ArrayList<String> aSmallSet = new ArrayList<String>;
+
+      ArrayList<String> aSmallSet = new ArrayList<String>();
       if(iSizeX >= iSizeY){
         iLength = iSizeX;
         iWidth = iSizeY;
@@ -323,20 +371,40 @@ public class SetSizes {
       if(iAttributeId == 40){
         // delete first
         aSmallSet.add("DELETE FROM oc_product_attribute WHERE product_id=" + iProductId
-            + " AND attribute_id=" + iAttributeId);
+            + " AND attribute_id IN (12, 217, " + iAttributeId + ") ");
         // insert after
         aSmallSet.add("INSERT INTO oc_product_attribute SET product_id=" + iProductId
-            + ", attribute_id=" + "217" + ", text=" + iSizeX);
+            + ", attribute_id=" + "217" + ", text=" + iSizeX + ", language_id=1");
         aSmallSet.add("INSERT INTO oc_product_attribute SET product_id=" + iProductId
-            + ", attribute_id=" + "12" + ", text=" + iSizeY);
+            + ", attribute_id=" + "12" + ", text=" + iSizeY + ", language_id=1");
       }
-      return sSql;
+      return aSmallSet;
 
     }
 
     public static int getProductId(Product product) {
         return product.getProduct_id();
     }
+
+    public static void sqlExecutor(ArrayList<String> aSqlCommandSet){
+     try ( Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/volna",
+                "volna", "bBD65855ZLzl@@@###");) 
+      {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        // connection.setAutoCommit(false); // disable auto commit
+        Statement statement;
+        statement = connection.createStatement();
+        ResultSet resultSet;
+        for(String item: aSqlCommandSet){
+          // System.out.println(item);
+          statement.executeUpdate(item);
+        }
+      } catch (Exception e) {
+        System.out.println(e.toString());
+      }
+    }
+
 
     public static int UpsertFilter(FullAttribute item, Product product) {
         // Insert new filter (or select exist)
