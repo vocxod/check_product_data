@@ -160,7 +160,8 @@ public class AddFilters {
                 + " WHERE fgd.name =\"" + sFilterGroupName + "\" AND fd.name=\"" + sFilterName + "\"";
         try ( Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/volna",
-                "volna", "bBD65855ZLzl@@@###");) {
+                "volna", "bBD65855ZLzl@@@###");) 
+        {
             Class.forName("com.mysql.cj.jdbc.Driver");
             // connection.setAutoCommit(false); // disable auto commit
             Statement statement;
