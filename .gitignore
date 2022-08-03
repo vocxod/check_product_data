@@ -32,3 +32,4 @@ target/jsonjack-1.0-SNAPSHOT.jar
 target/maven-archiver/pom.properties
 ./target/maven-archiver/pom.properties
 tmp
+venv

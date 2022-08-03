@@ -1,6 +1,7 @@
 ru/volnamarket/jsonjack/Product.class
 ru/volnamarket/jsonjack/FullAttribute.class
 ru/volnamarket/jsonjack/Jsonjack.class
+ru/volnamarket/jsonjack/AddCategoryAsFilter.class
 ru/volnamarket/jsonjack/SetManuf.class
 ru/volnamarket/jsonjack/SetManufacturer.class
 ru/volnamarket/jsonjack/AddFilters.class
